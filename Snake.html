@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=<device-width>, initial-scale=1.0">
+    <style>
+        input {
+            margin:0;
+        }
+
+        .rows {
+            display: flex;
+            flex-flow: row;
+            justify-content: center;
+            line-height: 0px;
+        }
+
+        #board {
+            background-color: teal;
+            display: flex;
+            flex-flow: column;
+            align-items: center;
+            line-height: 0px;
+        }
+    </style>
+    <title>Snake</title>
+</head>
+<body>
+    <div id="board"></div>
+    <h1 id="title">Snake ---- W,A,S,D</h1>
+    <h2>Length: <span id="score">0</span><h2>
+    <div>
+        <div>
+            <label for="sizeInput">Board Size: </label>
+            <input id="sizeInput" type="number" value="50">
+        </div>
+        <div>
+            <label for="foodCount">Food Count: </label>
+            <input id="foodCount" type="number" value="1">
+        </div>
+        <div>
+            <label for="timeInterval">Time Interval(ms): </label>
+            <input id="timeInterval" type="number" value="100">
+        </div>
+        <button id="start">START GAME</button>
+    </div>
+
+    <script>
+        const board = document.querySelector("#board"); 
+        const score = document.querySelector("#score");
+        const start = document.querySelector("#start");
+        const title = document.querySelector("#title");
+        const sizeInput = document.querySelector("#sizeInput");
+        const foodCountInput = document.querySelector("#foodCount");
+        const timeIntervalInput = document.querySelector("#timeInterval");
+        const startPos = [0,0];
+        let timeInterval = 100;
+        let size = 50;
+        let length = 1;
+
+        function createBoard(size, board){
+            for(let row = 0; row <size; row++){
+                let rowObj = document.createElement("div");
+                rowObj.classList.add(`row-${row}`,"row");
+                for(let col = 0; col<size; col++){
+                    let cb = document.createElement("input");
+                    cb.type = "checkbox";
+                    cb.classList.add(`col-${col}`);
+                    rowObj.appendChild(cb);
+                }
+                board.appendChild(rowObj);
+            }
+        }
+
+        function UpdateBoard(){
+            for(let row = 0; row<size; row++){
+                for(let col =0; col<size; col++){
+                    const check = document.querySelector(`.row-${row} .col-${col}`);
+                    if(check.classList.contains("check")){
+                        check.checked = true;
+                    }
+                    else{
+                        check.checked = false;
+                    }
+                }
+            }
+        }
+
+
+        let letterToNum = {'w': 0, 'a':1, 's':2, 'd':3, "ArrowUp":0, "ArrowLeft":1, "ArrowDown":2, "ArrowRight":3}
+        let directionRef = [[-1,0],[0,-1],[1,0],[0,1]];
+        let dir = 3;
+        let inputCheck = true;
+        document.addEventListener('keydown', (event)=>{
+            const dirNum = letterToNum[event.key];
+            if(dirNum !== undefined && (dirNum-dir)%2 !== 0 && inputCheck){
+                dir = dirNum;
+                inputCheck = false;
+                setTimeout(()=>{inputCheck=true},timeInterval)
+            }
+        })
+
+        let snake = [];
+        function move(){
+            let pass = true;
+            const newHead = [snake[0][0] + directionRef[dir][0], snake[0][1] + directionRef[dir][1]];
+            if(newHead[0]>=0 && newHead[0]<=size-1 && newHead[1]>=0 && newHead[1]<=size-1){
+                const headObj = document.querySelector(`.row-${newHead[0]} .col-${newHead[1]}`);
+                if(headObj.classList.contains("food")){
+                    headObj.classList.remove("food");
+                    length++;
+                    placeFood();
+                }
+                else if(headObj.checked){
+                    pass = false;
+                }
+                else{
+                    const tail = snake[snake.length-1];
+                    document.querySelector(`.row-${tail[0]} .col-${tail[1]}`).classList.remove("check");
+                    snake.pop();
+                }
+                document.querySelector(`.row-${newHead[0]} .col-${newHead[1]}`).classList.add("check");
+                snake.unshift(newHead);
+            }
+            else{
+                pass = false;
+            }
+            if(!pass){
+                clearInterval(gameclock);
+                title.innerText = "Game Over! Refresh to try again :)";
+            }   
+        }
+
+        function placeFood(){
+            let randRow = Math.floor(Math.random()*size);
+            let randCol = Math.floor(Math.random()*size);
+            while(document.querySelector(`.row-${randRow} .col-${randCol}`).classList.contains("check")){
+                randRow = Math.floor(Math.random()*size);
+                randCol = Math.floor(Math.random()*size);
+            }
+            document.querySelector(`.row-${randRow} .col-${randCol}`).classList.add("food","check");
+        }
+
+        let gameclock;
+        function startGame(){
+            size = parseInt(sizeInput.value);
+            timeInterval = parseInt(timeIntervalInput.value);
+            let foodCount = parseInt(foodCountInput.value);
+            if(size && timeInterval){
+                createBoard(size, board);
+                snake = [startPos]
+                gameclock = setInterval(move, timeInterval);
+                setInterval(UpdateBoard, timeInterval);
+                setInterval(() => {score.innerText = length}, timeInterval);
+                for(let i = 0; i<foodCount; i++){
+                    placeFood();
+                }
+                start.disabled= true;
+            }
+            else{
+                console.log("size =",size);
+            }
+            
+        }
+        start.addEventListener("click", startGame);
+    </script>
+</body>
+</html>
